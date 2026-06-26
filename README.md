@@ -11,13 +11,21 @@ Le robot utilise deux moteurs pas-à-pas suspendus pour positionner la nacelle p
 Le traceur fonctionne sur le principe de la gravité et de la tension de deux câbles :
 ``
 [Moteur Gauche (W)] ────────────────────────────── [Moteur Droit (X)]
+
            \                                                 /
+           
             \                                               /
+            
              \ Câble L1                           Câble L2 /
+             
               \                                           /
+              
                \                                         /
+               
                 \                (x, y)                 /
+                
                  └─────────────[ Nacelle ]─────────────┘
+                 
                               (Stylo + Servo)
 ``
 ### 1. La formule de calcul (Cinématique)
