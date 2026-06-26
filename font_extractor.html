@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Extracteur de Police → font_data.h</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 {
+    font-family: sans-serif;
+    font-size: 1.4rem;
+    color: #7ec8e3;
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+  .subtitle {
+    font-family: sans-serif;
+    font-size: 0.82rem;
+    color: #888;
+    margin-bottom: 20px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1300px;
+  }
+  .panel {
+    background: #16213e;
+    border: 1px solid #0f3460;
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .panel h2 {
+    font-size: 0.78rem;
+    color: #7ec8e3;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  canvas {
+    display: block;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    cursor: crosshair;
+    max-width: 100%;
+    image-rendering: pixelated;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  label { font-size: 0.78rem; color: #aaa; }
+  input[type=range] { width: 120px; accent-color: #7ec8e3; }
+  input[type=number] { 
+    width: 60px; background: #0f3460; border: 1px solid #7ec8e3;
+    color: #e0e0e0; border-radius: 4px; padding: 3px 6px; font-size: 0.8rem;
+  }
+  .btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.8; }
+  .btn-primary { background: #7ec8e3; color: #1a1a2e; }
+  .btn-danger  { background: #e36262; color: #fff; }
+  .btn-success { background: #62e3a0; color: #1a1a2e; }
+  .btn-neutral { background: #0f3460; color: #7ec8e3; border: 1px solid #7ec8e3; }
+
+  .letter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 36px);
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .letter-btn {
+    width: 36px; height: 36px;
+    border-radius: 4px;
+    border: 1px solid #0f3460;
+    background: #0f3460;
+    color: #888;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all 0.12s;
+  }
+  .letter-btn.active  { border-color: #7ec8e3; color: #7ec8e3; background: #1a1a2e; }
+  .letter-btn.done    { border-color: #62e3a0; color: #62e3a0; background: #0d2a1f; }
+
+  .crop-info {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  #previewCanvas {
+    background: #fff;
+    border: 2px solid #62e3a0;
+  }
+  .preview-wrap {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .contour-stats {
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  textarea {
+    width: 100%;
+    height: 200px;
+    background: #0a0a1a;
+    color: #62e3a0;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 0.72rem;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+  }
+  .drop-zone {
+    border: 2px dashed #0f3460;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    color: #555;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  .drop-zone.dragover { border-color: #7ec8e3; color: #7ec8e3; }
+  .progress-bar {
+    height: 4px;
+    background: #0f3460;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #7ec8e3;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .step-hint {
+    background: #0f3460;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.76rem;
+    color: #aaa;
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  .step-hint strong { color: #7ec8e3; }
+</style>
+</head>
+<body>
+
+<h1>🖋 Extracteur de Police → font_data.h</h1>
+<p class="subtitle">Extrait les contours de chaque lettre de l'image de police et génère un fichier Arduino</p>
+
+<div class="layout">
+
+<!-- COLONNE GAUCHE : Image source + sélection de zone -->
+<div>
+  <div class="panel">
+    <h2>1. Image source</h2>
+    <div class="drop-zone" id="dropZone">
+      📁 Glisser-déposer l'image de police ici<br>
+      <small>ou cliquer pour parcourir</small>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+
+    <div class="step-hint">
+      <strong>Mode de découpe :</strong> Dessinez un rectangle autour d'une lettre en maintenant le clic gauche. 
+      Sélectionnez la lettre correspondante à gauche, puis cliquez <strong>Valider la lettre</strong>.
+    </div>
+
+    <div class="controls" style="margin-bottom:10px">
+      <label>Threshold: <input type="range" id="threshold" min="30" max="220" value="100"></label>
+      <span id="threshVal" style="color:#7ec8e3;font-size:0.8rem">100</span>
+      <label style="margin-left:10px">Simplification: <input type="range" id="simplify" min="0" max="10" value="2"></label>
+      <span id="simplifyVal" style="color:#7ec8e3;font-size:0.8rem">2</span>
+    </div>
+
+    <canvas id="mainCanvas" width="600" height="400"></canvas>
+    <div class="crop-info" id="cropInfo">Chargez une image pour commencer</div>
+  </div>
+</div>
+
+<!-- COLONNE DROITE : Sélection lettre + préview + export -->
+<div>
+  <div class="panel" style="margin-bottom:16px">
+    <h2>2. Sélection de la lettre</h2>
+    <div class="letter-grid" id="letterGrid"></div>
+
+    <div class="preview-wrap">
+      <div>
+        <canvas id="previewCanvas" width="120" height="120"></canvas>
+        <div class="contour-stats" id="contourStats">—</div>
+      </div>
+      <div style="flex:1">
+        <div class="controls">
+          <button class="btn btn-primary" onclick="validateLetter()">✔ Valider la lettre</button>
+          <button class="btn btn-neutral" onclick="clearCurrentLetter()">✖ Effacer</button>
+        </div>
+        <div class="contour-stats" style="margin-top:10px" id="validatedCount">Lettres validées : 0 / 26</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>3. Export font_data.h</h2>
+    <div class="controls" style="margin-bottom:10px">
+      <label>Hauteur de référence (px): <input type="number" id="refHeight" value="160" min="10" max="500"></label>
+      <label style="margin-left:8px">Espacement inter-lettre: <input type="number" id="letterSpacing" value="15" min="0" max="100"></label>
+    </div>
+    <div class="controls" style="margin-bottom:10px">
+      <button class="btn btn-success" onclick="generateHeader()">⬇ Générer font_data.h</button>
+      <button class="btn btn-neutral" onclick="copyToClipboard()">📋 Copier</button>
+      <button class="btn btn-danger" onclick="clearAll()">🗑 Tout effacer</button>
+    </div>
+    <textarea id="output" readonly placeholder="Le code C++ apparaîtra ici après génération..."></textarea>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+let imgSrc = null;
+let imgEl = null;
+let selecting = false;
+let sel = {x:0,y:0,w:0,h:0};
+let startX, startY;
+let currentLetter = 'a';
+let letterData = {}; // {letter: {shapes:[{pts:[{x,y}]}], bbox:{x,y,w,h}}}
+
+const mainCanvas = document.getElementById('mainCanvas');
+const mainCtx    = mainCanvas.getContext('2d');
+const prevCanvas = document.getElementById('previewCanvas');
+const prevCtx    = prevCanvas.getContext('2d');
+
+// ─── Letter grid ─────────────────────────────────────────────
+const grid = document.getElementById('letterGrid');
+LETTERS.forEach(l => {
+  const b = document.createElement('button');
+  b.className = 'letter-btn' + (l === 'a' ? ' active' : '');
+  b.textContent = l;
+  b.id = 'lb_' + l;
+  b.onclick = () => selectLetter(l);
+  grid.appendChild(b);
+});
+
+function selectLetter(l) {
+  document.querySelectorAll('.letter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('lb_' + l).classList.add('active');
+  currentLetter = l;
+  updatePreview();
+}
+
+// ─── File loading ─────────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+dz.addEventListener('click', () => document.getElementById('fileInput').click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); loadFile(e.dataTransfer.files[0]); });
+document.getElementById('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+
+function loadFile(file) {
+  const url = URL.createObjectURL(file);
+  imgEl = new Image();
+  imgEl.onload = () => {
+    const maxW = 900, maxH = 600;
+    let scale = Math.min(maxW / imgEl.width, maxH / imgEl.height, 1);
+    mainCanvas.width  = Math.round(imgEl.width  * scale);
+    mainCanvas.height = Math.round(imgEl.height * scale);
+    imgSrc = {img: imgEl, scale};
+    drawMain();
+    document.getElementById('cropInfo').textContent = `Image chargée : ${imgEl.width}×${imgEl.height}px (affichée à ${Math.round(scale*100)}%)`;
+  };
+  imgEl.src = url;
+}
+
+// ─── Main canvas draw ─────────────────────────────────────────
+function drawMain() {
+  if (!imgSrc) return;
+  mainCtx.clearRect(0,0,mainCanvas.width,mainCanvas.height);
+  mainCtx.drawImage(imgSrc.img, 0, 0, mainCanvas.width, mainCanvas.height);
+  if (sel.w > 2 && sel.h > 2) {
+    mainCtx.strokeStyle = '#7ec8e3';
+    mainCtx.lineWidth = 2;
+    mainCtx.setLineDash([5,3]);
+    mainCtx.strokeRect(sel.x, sel.y, sel.w, sel.h);
+    mainCtx.setLineDash([]);
+  }
+}
+
+// ─── Selection rectangle ──────────────────────────────────────
+mainCanvas.addEventListener('mousedown', e => {
+  if (!imgSrc) return;
+  const r = mainCanvas.getBoundingClientRect();
+  startX = e.clientX - r.left;
+  startY = e.clientY - r.top;
+  selecting = true;
+  sel = {x:startX, y:startY, w:0, h:0};
+});
+
+mainCanvas.addEventListener('mousemove', e => {
+  if (!selecting) return;
+  const r = mainCanvas.getBoundingClientRect();
+  const cx = e.clientX - r.left;
+  const cy = e.clientY - r.top;
+  sel = {
+    x: Math.min(startX, cx),
+    y: Math.min(startY, cy),
+    w: Math.abs(cx - startX),
+    h: Math.abs(cy - startY)
+  };
+  drawMain();
+});
+
+mainCanvas.addEventListener('mouseup', () => {
+  selecting = false;
+  if (sel.w > 5 && sel.h > 5) extractAndPreview();
+});
+
+// ─── Contour extraction ───────────────────────────────────────
+function getThreshold() { return parseInt(document.getElementById('threshold').value); }
+function getSimplify()  { return parseInt(document.getElementById('simplify').value); }
+
+document.getElementById('threshold').addEventListener('input', function() {
+  document.getElementById('threshVal').textContent = this.value;
+  if (sel.w > 5) extractAndPreview();
+});
+document.getElementById('simplify').addEventListener('input', function() {
+  document.getElementById('simplifyVal').textContent = this.value;
+  if (sel.w > 5) extractAndPreview();
+});
+
+function extractAndPreview() {
+  if (!imgSrc || sel.w < 5 || sel.h < 5) return;
+
+  // Crop in original image coords
+  const s = imgSrc.scale;
+  const ox = sel.x / s, oy = sel.y / s;
+  const ow = sel.w / s, oh = sel.h / s;
+
+  // Draw crop to offscreen canvas
+  const off = document.createElement('canvas');
+  off.width = Math.round(ow); off.height = Math.round(oh);
+  const octx = off.getContext('2d');
+  octx.drawImage(imgSrc.img, ox, oy, ow, oh, 0, 0, off.width, off.height);
+
+  const imageData = octx.getImageData(0, 0, off.width, off.height);
+  const binary = binarize(imageData, getThreshold());
+  const shapes = extractContours(binary, off.width, off.height, getSimplify());
+
+  // Store temporarily
+  window._pendingShapes = { shapes, bbox: {x:ox, y:oy, w:ow, h:oh}, imgW:off.width, imgH:off.height };
+
+  drawPreview(binary, off.width, off.height, shapes);
+  document.getElementById('contourStats').textContent =
+    `${shapes.length} forme(s) | ${shapes.reduce((a,s)=>a+s.pts.length,0)} points total`;
+}
+
+function binarize(imageData, threshold) {
+  const d = imageData.data;
+  const w = imageData.width, h = imageData.height;
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    const r = d[i*4], g = d[i*4+1], b = d[i*4+2];
+    const gray = 0.299*r + 0.587*g + 0.114*b;
+    out[i] = gray < threshold ? 1 : 0; // 1 = dark = ink
+  }
+  return out;
+}
+
+// Simple border-following contour extraction
+function extractContours(binary, w, h, simplifyPx) {
+  const visited = new Uint8Array(w * h);
+  const shapes = [];
+
+  function idx(x, y) { return y * w + x; }
+  const dirs = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+
+  for (let y = 1; y < h-1; y++) {
+    for (let x = 1; x < w-1; x++) {
+      if (binary[idx(x,y)] === 1 && !visited[idx(x,y)] && binary[idx(x-1,y)] === 0) {
+        // Border pixel found
+        const pts = [];
+        let cx = x, cy = y, dir = 0;
+        let limit = 8000;
+        do {
+          visited[idx(cx,cy)] = 1;
+          pts.push({x:cx, y:cy});
+          let found = false;
+          for (let i = 0; i < 8; i++) {
+            const nd = (dir + 6 + i) % 8;
+            const nx = cx + dirs[nd][0], ny = cy + dirs[nd][1];
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h && binary[idx(nx,ny)] === 1) {
+              cx = nx; cy = ny; dir = nd; found = true; break;
+            }
+          }
+          if (!found) break;
+          if (--limit <= 0) break;
+        } while (cx !== x || cy !== y);
+
+        if (pts.length >= 8) {
+          const simplified = simplifyPx > 0 ? rdpSimplify(pts, simplifyPx) : pts;
+          if (simplified.length >= 4) shapes.push({pts: simplified});
+        }
+      }
+    }
+  }
+  return shapes;
+}
+
+// Ramer–Douglas–Peucker
+function rdpSimplify(pts, eps) {
+  if (pts.length <= 2) return pts;
+  let maxD = 0, maxI = 0;
+  const p1 = pts[0], p2 = pts[pts.length-1];
+  for (let i = 1; i < pts.length-1; i++) {
+    const d = pointLineDistance(pts[i], p1, p2);
+    if (d > maxD) { maxD = d; maxI = i; }
+  }
+  if (maxD > eps) {
+    const l = rdpSimplify(pts.slice(0, maxI+1), eps);
+    const r = rdpSimplify(pts.slice(maxI), eps);
+    return [...l.slice(0,-1), ...r];
+  }
+  return [p1, p2];
+}
+
+function pointLineDistance(p, a, b) {
+  const dx = b.x-a.x, dy = b.y-a.y;
+  if (dx===0 && dy===0) return Math.hypot(p.x-a.x, p.y-a.y);
+  const t = ((p.x-a.x)*dx + (p.y-a.y)*dy) / (dx*dx+dy*dy);
+  const px = a.x + t*dx, py = a.y + t*dy;
+  return Math.hypot(p.x-px, p.y-py);
+}
+
+function drawPreview(binary, w, h, shapes) {
+  const pc = prevCanvas;
+  const scale = Math.min(pc.width / w, pc.height / h);
+  prevCtx.fillStyle = '#fff';
+  prevCtx.fillRect(0,0,pc.width,pc.height);
+
+  // Draw binary
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (binary[y*w+x]) {
+      prevCtx.fillStyle = 'rgba(0,0,0,0.15)';
+      prevCtx.fillRect(x*scale, y*scale, scale, scale);
+    }
+  }
+  // Draw contours
+  const colors = ['#e36262','#7ec8e3','#62e3a0','#e3c262','#c262e3'];
+  shapes.forEach((shape, si) => {
+    prevCtx.strokeStyle = colors[si % colors.length];
+    prevCtx.lineWidth = 1.5;
+    prevCtx.beginPath();
+    shape.pts.forEach((p,i) => {
+      i===0 ? prevCtx.moveTo(p.x*scale, p.y*scale) : prevCtx.lineTo(p.x*scale, p.y*scale);
+    });
+    prevCtx.closePath();
+    prevCtx.stroke();
+  });
+}
+
+function updatePreview() {
+  const d = letterData[currentLetter];
+  if (!d) {
+    prevCtx.fillStyle = '#fff';
+    prevCtx.fillRect(0,0,prevCanvas.width,prevCanvas.height);
+    document.getElementById('contourStats').textContent = 'Aucune donnée pour cette lettre';
+    return;
+  }
+  // Draw stored contours normalised
+  const pc = prevCanvas;
+  prevCtx.fillStyle = '#fff';
+  prevCtx.fillRect(0,0,pc.width,pc.height);
+  const bw = d.bbox.w, bh = d.bbox.h;
+  const scale = Math.min((pc.width-4)/bw, (pc.height-4)/bh);
+  const colors = ['#e36262','#7ec8e3','#62e3a0','#e3c262','#c262e3'];
+  d.shapes.forEach((shape, si) => {
+    prevCtx.strokeStyle = colors[si % colors.length];
+    prevCtx.lineWidth = 1.5;
+    prevCtx.beginPath();
+    shape.pts.forEach((p,i) => {
+      const sx = p.x*scale+2, sy = p.y*scale+2;
+      i===0 ? prevCtx.moveTo(sx,sy) : prevCtx.lineTo(sx,sy);
+    });
+    prevCtx.closePath();
+    prevCtx.stroke();
+  });
+  document.getElementById('contourStats').textContent =
+    `${d.shapes.length} forme(s) | ${d.shapes.reduce((a,s)=>a+s.pts.length,0)} points`;
+}
+
+// ─── Validate letter ──────────────────────────────────────────
+function validateLetter() {
+  const p = window._pendingShapes;
+  if (!p || p.shapes.length === 0) {
+    alert('Sélectionnez d\'abord une zone et vérifiez que des contours sont détectés.');
+    return;
+  }
+  letterData[currentLetter] = {
+    shapes: p.shapes,
+    bbox: {x:0, y:0, w:p.imgW, h:p.imgH}
+  };
+  const btn = document.getElementById('lb_' + currentLetter);
+  btn.classList.remove('active');
+  btn.classList.add('done');
+
+  // Auto-advance to next unvalidated letter
+  const idx = LETTERS.indexOf(currentLetter);
+  const next = LETTERS.slice(idx+1).find(l => !letterData[l]) || currentLetter;
+  selectLetter(next);
+  updateValidatedCount();
+}
+
+function clearCurrentLetter() {
+  delete letterData[currentLetter];
+  const btn = document.getElementById('lb_' + currentLetter);
+  btn.classList.remove('done');
+  btn.classList.add('active');
+  updateValidatedCount();
+  updatePreview();
+}
+
+function clearAll() {
+  if (!confirm('Effacer toutes les lettres validées ?')) return;
+  letterData = {};
+  LETTERS.forEach(l => {
+    const b = document.getElementById('lb_' + l);
+    b.classList.remove('done');
+    if (l === currentLetter) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+  updateValidatedCount();
+  updatePreview();
+  document.getElementById('output').value = '';
+}
+
+function updateValidatedCount() {
+  const n = Object.keys(letterData).length;
+  document.getElementById('validatedCount').textContent = `Lettres validées : ${n} / 26`;
+  document.getElementById('progressFill').style.width = (n/26*100)+'%';
+}
+
+// ─── Generate C header ────────────────────────────────────────
+function generateHeader() {
+  const refH = parseInt(document.getElementById('refHeight').value) || 160;
+  const spacing = parseInt(document.getElementById('letterSpacing').value) || 15;
+  const letters = Object.keys(letterData).sort();
+
+  if (letters.length === 0) {
+    alert('Aucune lettre validée. Extrayez et validez au moins une lettre.'); return;
+  }
+
+  let allPts = [];
+  let letterMeta = []; // {letter, shapeStart, shapeCounts[], advance}
+
+  letters.forEach(l => {
+    const d = letterData[l];
+    const normScale = refH / d.bbox.h;
+    const meta = { letter: l, shapeStart: allPts.length, shapeCounts: [], advance: Math.round(d.bbox.w * normScale) + spacing };
+
+    d.shapes.forEach(shape => {
+      const start = allPts.length;
+      shape.pts.forEach(p => {
+        allPts.push({
+          x: Math.round(p.x * normScale),
+          y: Math.round(p.y * normScale)
+        });
+      });
+      meta.shapeCounts.push(allPts.length - start);
+    });
+
+    letterMeta.push(meta);
+  });
+
+  let out = `// font_data.h — Généré automatiquement par font_extractor.html
+// Police extraite depuis image. ${letters.length} lettres, ${allPts.length} points total.
+// Hauteur de référence : ${refH}px, espacement : ${spacing}px
+//
+// Usage : inclure ce fichier dans dessin_servo.ino
+// La fonction drawWord(const char* word) assemble les lettres.
+
+#pragma once
+#include <Arduino.h>
+
+// ── Points de tous les contours (coordonnées normalisées)
+const int FONT_TOTAL_POINTS = ${allPts.length};
+const int16_t fontPoints[${allPts.length}][2] PROGMEM = {\n`;
+
+  allPts.forEach(p => { out += `  {${p.x},${p.y}},\n`; });
+  out += `};\n\n`;
+
+  // Build flat shapes index: [ptStart, ptCount] per shape
+  // And letter index: [shapeStart, shapeCount, advance]
+  const flatShapes = [];
+  letterMeta.forEach(meta => {
+    let ptCursor = meta.shapeStart;
+    meta.shapeCounts.forEach(cnt => {
+      flatShapes.push([ptCursor, cnt]);
+      ptCursor += cnt;
+    });
+  });
+
+  out += `// ── Index des formes : {ptStart, ptCount}\n`;
+  out += `const int FONT_TOTAL_SHAPES = ${flatShapes.length};\n`;
+  out += `const int16_t fontShapes[${flatShapes.length}][2] PROGMEM = {\n`;
+  flatShapes.forEach(s => { out += `  {${s[0]},${s[1]}},\n`; });
+  out += `};\n\n`;
+
+  // Letter lookup
+  out += `// ── Index des lettres : {shapeStart, shapeCount, advance_px}\n`;
+  out += `struct FontLetter { char letter; int16_t shapeStart; int16_t shapeCount; int16_t advance; };\n`;
+  out += `const int FONT_LETTER_COUNT = ${letterMeta.length};\n`;
+  out += `const FontLetter fontLetters[${letterMeta.length}] PROGMEM = {\n`;
+  let shapeGlobalIdx = 0;
+  letterMeta.forEach(meta => {
+    const cnt = meta.shapeCounts.length;
+    out += `  {'${meta.letter}', ${shapeGlobalIdx}, ${cnt}, ${meta.advance}},\n`;
+    shapeGlobalIdx += cnt;
+  });
+  out += `};\n\n`;
+
+  out += `// ── Hauteur de référence et espacement\n`;
+  out += `#define FONT_REF_HEIGHT_PX ${refH}\n`;
+  out += `#define FONT_LETTER_SPACING_PX ${spacing}\n`;
+
+  document.getElementById('output').value = out;
+
+  // Download
+  const blob = new Blob([out], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'font_data.h';
+  a.click();
+}
+
+function copyToClipboard() {
+  const ta = document.getElementById('output');
+  if (!ta.value) { alert('Générez d\'abord le fichier.'); return; }
+  navigator.clipboard.writeText(ta.value).then(() => alert('Copié dans le presse-papier !'));
+}
+</script>
+</body>
+</html>
