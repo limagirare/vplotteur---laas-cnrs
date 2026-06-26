@@ -30,8 +30,8 @@ Le traceur fonctionne sur le principe de la gravité et de la tension de deux c�
 ``
 ### 1. La formule de calcul (Cinématique)
 Pour positionner le stylo au point exact $(x, y)$ sur le tableau de largeur $W$, l'Arduino calcule en continu la longueur idéale des deux câbles à l'aide du théorème de Pythagore :
-$$L_1 = \sqrt{x^2 + y^2}$$
-$$L_2 = \sqrt{(W - x)^2 + y^2}$$
+``L_1 = \sqrt{x^2 + y^2}``
+``L_2 = \sqrt{(W - x)^2 + y^2}``
 
 ### 2. Du millimètre aux Pas Moteur
 Pour déplacer la nacelle d'un millimètre, l'Arduino convertit cette distance en nombre de pas moteurs grâce à la formule suivante :
