@@ -1,31 +1,26 @@
 #  Projet V-Plotter : Dessinateur Vertical Automatique
 
-Ce projet présente un système complet de traceur vertical (V-Plotter ou Polargraph) capable de reproduire des dessins complexes (comme un dragon) et d'écrire du texte fluide avec une police personnalisée sur un tableau de grande taille ($1741 \times 900$ mm). 
+Ce projet présente un système de traceur vertical capable de reproduire des dessins complexes et d'écrire du texte fluide avec une police personnalisée sur un tableau de grande taille. 
 
-Le robot utilise deux moteurs pas-à-pas suspendus pour positionner la nacelle porte-stylo (gondola) et un servomoteur pour lever ou poser le stylo.
+Le robot utilise deux moteurs pas-à-pas suspendus pour positionner la nacelle porte-stylo et un servomoteur pour lever ou poser le stylo.
 
 ---
 
 ##  Architecture et Fonctionnement Mécanique
 
 Le traceur fonctionne sur le principe de la gravité et de la tension de deux câbles :
+``
 ``[Moteur Gauche (W)] ────────────────────────────── [Moteur Droit (X)]
 
            \                                                 /
-           
             \                                               /
-            
              \ Câble L1                           Câble L2 /
-             
-              \                                           /
-              
+              \                                           / 
                \                                         /
-               
                 \                (x, y)                 /
-                
                  └─────────────[ Nacelle ]─────────────┘
                  
-                              (Stylo + Servo)``
+                              (Stylo + Servo)
 
 ### 1. La formule de calcul (Cinématique)
 Pour positionner le stylo au point exact $(x, y)$ sur le tableau de largeur $W$, l'Arduino calcule en continu la longueur idéale des deux câbles à l'aide du théorème de Pythagore :
