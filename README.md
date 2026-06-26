@@ -76,7 +76,8 @@ Vérifiez et adaptez les constantes en haut de vos fichiers .ino selon votre mat
 #define SERVO_ANGLE_BAS 180    // Angle pour poser le stylo (écriture)
 #define SERVO_ANGLE_HAUT 30    // Angle pour lever le stylo (déplacement à vide)
 #define TABLEAU_W_MM 1741.0f   // Distance exacte entre vos deux poulies en mm
-#define TABLEAU_H_MM 900.0f    // Hauteur de votre tableau en mm```
+#define TABLEAU_H_MM 900.0f    // Hauteur de votre tableau en mm
+```
 
 ## Procédure de Calibration et Tracé
 Le robot n'ayant pas de capteur de fin de course , la calibration manuelle au démarrage est primordiale :
