@@ -10,7 +10,7 @@ Le robot utilise deux moteurs pas-à-pas suspendus pour positionner la nacelle p
 
 Le traceur fonctionne sur le principe de la gravité et de la tension de deux câbles :
 ``
-[Moteur Gauche (W)] ────────────────────────────── [Moteur Droit (X)]
+[Moteur Gauche (W)] ────────────────────────────── [Moteur Droit (X)] ``
 
            \                                                 /
            
