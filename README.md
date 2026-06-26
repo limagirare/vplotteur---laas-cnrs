@@ -9,7 +9,7 @@ Le robot utilise deux moteurs pas-à-pas suspendus pour positionner la nacelle p
 ##  Architecture et Fonctionnement Mécanique
 
 Le traceur fonctionne sur le principe de la gravité et de la tension de deux câbles :
-$$
+``
 [Moteur Gauche (W)] ────────────────────────────── [Moteur Droit (X)]
            \                                                 /
             \                                               /
@@ -19,7 +19,7 @@ $$
                 \                (x, y)                 /
                  └─────────────[ Nacelle ]─────────────┘
                               (Stylo + Servo)
-$$
+``
 ### 1. La formule de calcul (Cinématique)
 Pour positionner le stylo au point exact $(x, y)$ sur le tableau de largeur $W$, l'Arduino calcule en continu la longueur idéale des deux câbles à l'aide du théorème de Pythagore :
 $$L_1 = \sqrt{x^2 + y^2}$$
